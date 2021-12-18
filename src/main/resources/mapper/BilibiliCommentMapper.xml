@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="priv.eric.oin.dao.BilibiliCommentDao">
+
+    <insert id="addNewComment" parameterType="priv.eric.oin.entity.BvComment">
+        INSERT IGNORE INTO bilibili_comment values (#{id}, #{commentId}, #{bvCode}, #{cid}, #{offset}, #{content}, #{createTime})
+    </insert>
+
+
+
+</mapper>
