@@ -1,0 +1,24 @@
+{
+  "properties": [
+    {
+      "name": "job.bilibili.rank",
+      "type": "java.lang.String",
+      "description": "定时获取b站排行榜信息."
+    },
+    {
+      "name": "robot.bilibili.bv.base.url",
+      "type": "java.lang.String",
+      "description": "b站BV基本信息获取url."
+    },
+    {
+      "name": "robot.bilibili.comment.xml.url",
+      "type": "java.lang.String",
+      "description": "b站BV弹幕xml文件获取url."
+    },
+    {
+      "name": "robot.bilibili.comment.xml.local",
+      "type": "java.lang.String",
+      "description": "b站BV弹幕xml文件本地存放地址."
+    }
+  ]
+}
