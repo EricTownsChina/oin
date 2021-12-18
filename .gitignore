@@ -31,4 +31,4 @@ build/
 .vscode/
 
 ### CUSTOM ###
-**/src/resources/application.properties
+**/src/main/resources/application.properties
