@@ -29,3 +29,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### CUSTOM ###
+**/src/resource/application.properties
