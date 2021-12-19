@@ -3,7 +3,16 @@
 <mapper namespace="priv.eric.oin.dao.BilibiliCommentDao">
 
     <insert id="addNewComment" parameterType="priv.eric.oin.entity.BvComment">
-        INSERT IGNORE INTO bilibili_comment values (#{id}, #{commentId}, #{bvCode}, #{cid}, #{offset}, #{content}, #{createTime})
+        INSERT IGNORE INTO bilibili_comment VALUES (#{id}, #{commentId}, #{bvCode}, #{cid}, #{offset}, #{content}, #{createTime})
+    </insert>
+
+    <insert id="batchAddNewComment" parameterType="java.util.List">
+        INSERT IGNORE INTO
+            bilibili_comment
+        VALUES 
+        <foreach collection="list" separator="," item="comment">
+            (#{comment.id}, #{comment.commentId}, #{comment.bvCode}, #{comment.cid}, #{comment.offset}, #{comment.content}, #{comment.createTime})
+        </foreach>
     </insert>
 
 

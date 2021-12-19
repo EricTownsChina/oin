@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>priv.eric</groupId>
     <artifactId>oin</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>oin</name>
     <description>oin</description>
 
@@ -139,6 +139,7 @@
     </dependencyManagement>
 
     <build>
+        <finalName>${artifactId}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

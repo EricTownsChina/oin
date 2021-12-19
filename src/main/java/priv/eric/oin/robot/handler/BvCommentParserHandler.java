@@ -12,6 +12,8 @@ import priv.eric.oin.util.UUIDUtil;
 
 import javax.annotation.Resource;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -43,23 +45,51 @@ public class BvCommentParserHandler extends DefaultHandler {
         this.cid = cid;
     }
 
+    /**
+     * 记录获取到的弹幕条数
+     */
     private final AtomicInteger docIndex = new AtomicInteger();
 
+    /**
+     * xml标签<a>
+     */
     private static final String D = "d";
+    /**
+     * 批处理触发条数
+     */
+    private static final int BATCH_SIZE = 1000;
+    /**
+     * 是否是需要处理的记录
+     */
     private boolean handleFlag = false;
+    /**
+     * 弹幕记录
+     */
     private BvComment bvComment;
+    /**
+     * 批处理集合
+     */
+    private final List<BvComment> batchBvCommentList = new ArrayList<>();
 
     @Resource
     private BilibiliCommentDao bilibiliCommentDao;
 
     @Override
     public void startDocument() throws SAXException {
+        // start.
         log.info("cid = {} 的弹幕xml解析开始.", cid);
     }
 
     @Override
     public void endDocument() throws SAXException {
+        // 执行最后一批弹幕列表
+        bilibiliCommentDao.batchAddNewComment(batchBvCommentList);
+        // 清空批处理列表
+        batchBvCommentList.clear();
+        // end.
         log.info("cid = {} 的弹幕xml解析结束, 共解析到 {} 个弹幕.", cid, docIndex);
+        // 清空计数器
+        docIndex.set(0);
     }
 
     /**
@@ -114,6 +144,8 @@ public class BvCommentParserHandler extends DefaultHandler {
         if (!handleFlag || null == bvComment || 0L == bvComment.getCommentId()) {
             return;
         }
+        // 记录条数
+        docIndex.getAndIncrement();
 
         // 弹幕内容
         bvComment.setContent(new String(ch, start, length));
@@ -122,14 +154,21 @@ public class BvCommentParserHandler extends DefaultHandler {
         // ID
         bvComment.setId(UUIDUtil.next());
 
-        // 入库
-        bilibiliCommentDao.addNewComment(bvComment);
+        // 超过了批处理的数量
+        if (batchBvCommentList.size() >= BATCH_SIZE) {
+            // 批量入库
+            bilibiliCommentDao.batchAddNewComment(batchBvCommentList);
+            // 清空批处理列表
+            batchBvCommentList.clear();
+        }
+
+        // 列表添加弹幕对象
+        batchBvCommentList.add(bvComment);
     }
 
     @Override
     public void endElement(String uri, String localName, String qName) throws SAXException {
         super.endElement(uri, localName, qName);
-        docIndex.getAndIncrement();
     }
 
 }

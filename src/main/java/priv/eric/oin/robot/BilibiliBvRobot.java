@@ -9,6 +9,13 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author EricTownsChina@outlook.com
@@ -17,18 +24,80 @@ import org.openqa.selenium.chrome.ChromeOptions;
  * desc:
  */
 @Slf4j
+@Service
 public class BilibiliBvRobot {
 
     private static final String DRIVER_URL_KEY = "webdriver.chrome.driver";
     private static final String DRIVER_URL_URL = "D:\\Chrome\\chromedriver.exe";
+    private static final int BV_LENGTH = 12;
+    private static final Map<String, Integer> EXIST_URL_MAP = new ConcurrentHashMap<>();
 
-    public static void main(String[] args) {
-        Document doc = getDoc("https://www.bilibili.com/v/popular/rank/guochan");
+    @Resource
+    private BilibiliCommentRobot commentRobot;
 
-        System.out.println("===== end");
+    public void handleBvHtml() {
+        String rootHref= "https://www.bilibili.com";
+        Document doc = getDoc(rootHref);
+        EXIST_URL_MAP.put(rootHref, 1);
+        executeDocumentBvCode(doc);
     }
 
-    private static Document getDoc(String url) {
+    /**
+     * 处理Document中的BV号
+     *
+     * @param doc Document
+     */
+    private void executeDocumentBvCode(Document doc) {
+        // 选择负责条件的元素
+        Elements bvElements = doc.select("a[href*=/BV]");
+
+        // 遍历符合条件的元素
+        for (Element bvElement : bvElements) {
+            // 提取出BV号信息
+            String bvHref = bvElement.attr("href");
+            int startIndex = bvHref.indexOf("/BV");
+            int endIndex = startIndex + BV_LENGTH + 1;
+            if (-1 == startIndex || endIndex > bvHref.length()) {
+                log.info("解析bvCode失败, bvHref = {}", bvHref);
+                continue;
+            }
+            String bvCode = bvHref.substring(startIndex + 1, endIndex);
+            log.info("------------------------------------------  bvCode = {}", bvCode);
+
+            // TODO: 2021-12-19 执行根据BV号获取弹幕的任务, 后续可以优化为消息队列
+            commentRobot.saveBvComment(bvCode);
+        }
+
+        // 获取Document中的所有带有bilibili的a标签href地址
+        Elements aElements = doc.select("a[href*=bilibili]");
+        aElements.forEach(aElement -> {
+            String href = aElement.attr("href");
+            // 已经解析过, 不再重复解析
+            if (EXIST_URL_MAP.containsKey(href)) {
+                EXIST_URL_MAP.compute(href, (k, v) -> v++);
+                return;
+            }
+            // 记录解析url
+            EXIST_URL_MAP.put(href, 1);
+            if (href.startsWith("//")) {
+                href = "https:" + href;
+            }
+            if (href.startsWith("/")) {
+                href = "https://www.bilibili.com/" + href;
+            }
+            log.info("-------------------------------------- 获取到url = {}", href);
+            Document newDoc = getDoc(href);
+            executeDocumentBvCode(newDoc);
+        });
+    }
+
+    /**
+     * 获取指定url的Document
+     *
+     * @param url url
+     * @return Document
+     */
+    private Document getDoc(String url) {
         Document doc = null;
 
         // 设置系统参数
@@ -44,15 +113,12 @@ public class BilibiliBvRobot {
 
         //等待几秒
         try {
-            //向下滚动  方法一
+            //向下滚动到页面底部
             JavascriptExecutor js = (JavascriptExecutor) webDriver;
-            js.executeScript("scrollTo(0,20000)");
-            Thread.sleep(10000);
+            js.executeScript("window.scrollTo(0, document.documentElement.clientHeight);");
 
-            /*
-            //向下滚动 方法二
-            ((JavascriptExecutor)webDriver).executeScript("scrollTo(0,10000)");*/
-
+            // 休息片刻
+            Thread.sleep(8000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -65,54 +131,6 @@ public class BilibiliBvRobot {
 
         // 返回Docment节点
         return doc;
-    }
-
-    public static void parseB(Document doc) {
-        if (null == doc) {
-            log.info("doc is null");
-            return;
-        }
-
-    }
-
-    /**
-     * 解析传过来的doc
-     * @param doc jsoup document
-     */
-    public static void parse(Document doc){
-        if(doc == null){
-            log.info("doc is null, unable to continue! ");
-            return ;
-        }
-        Elements content = doc.select("div.content");
-
-        // 计数器
-        int i = 0;
-        for (Element element : content) {
-            i++;
-            log.info("===== 读取到第 " + i + " 篇文章简介");
-            //获取文章标题
-            String title = element.select("a.title").text();
-            //获取获取帖子网址
-            String url = element.select("a.title").attr("href");
-            url = "https://www.jianshu.com" + url;
-            //获取文章的摘要
-            String digest = element.select("p.abstract").text();
-            //获取文章作者名称
-            String author = element.select("a.nickname").text();
-            //获取作者网址
-            String authorUrl = element.select("a.nickname").attr("href");
-            authorUrl = "https://www.jianshu.com" + authorUrl;
-
-            log.info("title: " + title);
-            log.info("url: " + url);
-            log.info("digest:  " + digest);
-            log.info("author: " + author);
-            log.info("authorUrl: " + authorUrl);
-            log.info("--------------\n");
-        }
-
-        log.info("===== 共获取到 " + i + " 篇文章简介");
     }
 
 

@@ -5,8 +5,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+/**
+ * @author ErictownsChina@outlook.com
+ */
 @MapperScan("priv.eric.oin.dao")
-@EnableScheduling
 @SpringBootApplication
 public class OinApplication {
 

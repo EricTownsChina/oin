@@ -1,0 +1,1 @@
+nohup java -jar oin.jar >/dev/null 2>&1 &
