@@ -9,6 +9,8 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -16,6 +18,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author EricTownsChina@outlook.com
@@ -28,13 +31,25 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BilibiliBvRobot {
 
     private static final String DRIVER_URL_KEY = "webdriver.chrome.driver";
-    private static final String DRIVER_URL_URL = "D:\\Chrome\\chromedriver.exe";
     private static final int BV_LENGTH = 12;
     private static final Map<String, Integer> EXIST_URL_MAP = new ConcurrentHashMap<>();
 
     @Resource
     private BilibiliCommentRobot commentRobot;
 
+    @Value("${robot.chrome.driver.url}")
+    private String chromeDriver;
+
+    @Scheduled(cron = "${robot.bilibili.comment.time}")
+    public void handleBvJob() {
+        log.info("------------- BV job start...");
+        handleBvHtml();
+        log.info("------------- BV job end.");
+    }
+
+    /**
+     * 处理b站BV
+     */
     public void handleBvHtml() {
         String rootHref= "https://www.bilibili.com";
         Document doc = getDoc(rootHref);
@@ -101,11 +116,15 @@ public class BilibiliBvRobot {
         Document doc = null;
 
         // 设置系统参数
-        System.setProperty(DRIVER_URL_KEY, DRIVER_URL_URL);
+        System.setProperty(DRIVER_URL_KEY, chromeDriver);
         //创建chrome参数对象
         ChromeOptions options = new ChromeOptions();
         //浏览器后台运行
         options.addArguments("headless");
+        options.addArguments("disable-dev-shm-usage");
+        options.addArguments("no-sandbox");
+        options.addArguments("blink-settings=imagesEnabled=false");
+        options.addArguments("disable-gpu");
         // 新建chrome驱动
         WebDriver webDriver = new ChromeDriver(options);
 

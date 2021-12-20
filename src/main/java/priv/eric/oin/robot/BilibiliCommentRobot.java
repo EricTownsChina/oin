@@ -15,8 +15,7 @@ import javax.annotation.Resource;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author EricTownsChina@outlook.com
@@ -57,16 +56,30 @@ public class BilibiliCommentRobot {
         }
 
         // 获取bv对应的cid列表
-        List<String> cidList = getCid(bvCode);
-        if (CollectionUtils.isEmpty(cidList)) {
+        Set<String> cidSet = getCid(bvCode);
+        if (CollectionUtils.isEmpty(cidSet)) {
             log.info("没有获取到BV号为 {} 对应的cid列表", bvCode);
             return;
         }
 
         // 遍历处理
-        for (String cid : cidList) {
+        for (String cid : cidSet) {
             // 获取弹幕文件
-            File xmlFile = getCommentXml(cid);
+            File xmlFile;
+            try {
+                // 获取弹幕xml文件
+                xmlFile = getCommentXml(cid);
+                // 随机睡眠
+                int i = new Random(2).nextInt(10);
+                Thread.sleep(i * 1000);
+            } catch (Exception e) {
+                log.error("get xml file error : ", e);
+                continue;
+            }
+            if (null == xmlFile) {
+                continue;
+            }
+
             // 解析文件, 推入消息队列
             saxParserComment(xmlFile, bvCode, cid);
         }
@@ -102,9 +115,22 @@ public class BilibiliCommentRobot {
      * @return 本地保存的xml文件
      */
     private File getCommentXml(String cid) {
+        File baseDir = new File(bvCommentLocal);
+        // 没有存储文件夹, 创建; 失败返回
+        if (!baseDir.exists() && baseDir.isDirectory() && !baseDir.mkdirs()) {
+            return null;
+        }
+
+        // 存放的地址
         String newFileName = bvCommentLocal + File.separator + cid + "-" + System.currentTimeMillis() + ".xml";
         File newFile = new File(newFileName);
-        HttpUtil.downloadFile(bvCommentUrl.replace(PLACEHOLDER_CID, cid), newFile.getAbsoluteFile());
+
+        // 要爬取的地址
+        String xmlFileUrl = bvCommentUrl.replace(PLACEHOLDER_CID, cid);
+        log.info("xml file url = {}", xmlFileUrl);
+
+        // 爬取xml到存放地址
+        HttpUtil.downloadFile(xmlFileUrl, newFile.getAbsoluteFile());
         return newFile;
     }
 
@@ -114,13 +140,13 @@ public class BilibiliCommentRobot {
      * @param bvCode av号
      * @return List
      */
-    private List<String> getCid(String bvCode) {
+    private Set<String> getCid(String bvCode) {
         // 参数校验
         if (StringUtils.isEmpty(bvCode)) {
             log.info("avCode is empty.");
             return null;
         }
-        List<String> cidList = new ArrayList<>();
+        Set<String> cidSet = new HashSet<>();
 
         // 获取视频基本信息
         String s = HttpUtil.get(bvBaseInfo.replace(PLACEHOLDER_BVID, bvCode));
@@ -148,9 +174,9 @@ public class BilibiliCommentRobot {
                     continue;
                 }
                 // 添加cid
-                cidList.add(cid);
+                cidSet.add(cid);
             }
-            return cidList;
+            return cidSet;
 
         } catch (Exception e) {
             log.error("Exception : ", e);

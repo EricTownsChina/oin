@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * @author ErictownsChina@outlook.com
  */
+@EnableScheduling
 @MapperScan("priv.eric.oin.dao")
 @SpringBootApplication
 public class OinApplication {

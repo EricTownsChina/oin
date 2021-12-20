@@ -1,1 +1,2 @@
-nohup java -jar oin.jar >/dev/null 2>&1 &
+#!/bin/bash
+nohup java -jar /home/oin/oin.jar --spring.profiles.active=server >/dev/null 2>&1 &

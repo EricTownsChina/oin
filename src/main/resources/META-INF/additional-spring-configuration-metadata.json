@@ -19,6 +19,16 @@
       "name": "robot.bilibili.comment.xml.local",
       "type": "java.lang.String",
       "description": "b站BV弹幕xml文件本地存放地址."
+    },
+    {
+      "name": "robot.bilibili.comment.time",
+      "type": "java.lang.String",
+      "description": "定时处理b站BV弹幕信息."
+    },
+    {
+      "name": "robot.chrome.driver.url",
+      "type": "java.lang.String",
+      "description": "chrome driver url."
     }
   ]
 }
