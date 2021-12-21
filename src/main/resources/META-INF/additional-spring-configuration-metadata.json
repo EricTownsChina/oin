@@ -29,6 +29,11 @@
       "name": "robot.chrome.driver.url",
       "type": "java.lang.String",
       "description": "chrome driver url."
+    },
+    {
+      "name": "robot.bilibili.handle.bv.clear",
+      "type": "java.lang.String",
+      "description": "已处理bv号弹幕清理(日清)."
     }
   ]
 }

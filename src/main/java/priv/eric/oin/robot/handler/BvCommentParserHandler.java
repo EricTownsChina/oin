@@ -2,6 +2,7 @@ package priv.eric.oin.robot.handler;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -82,10 +83,13 @@ public class BvCommentParserHandler extends DefaultHandler {
 
     @Override
     public void endDocument() throws SAXException {
-        // 执行最后一批弹幕列表
-        bilibiliCommentDao.batchAddNewComment(batchBvCommentList);
-        // 清空批处理列表
-        batchBvCommentList.clear();
+        if (!CollectionUtils.isEmpty(batchBvCommentList)) {
+            // 执行最后一批弹幕列表
+            bilibiliCommentDao.batchAddNewComment(batchBvCommentList);
+            // 清空批处理列表
+            batchBvCommentList.clear();
+        }
+
         // end.
         log.info("cid = {} 的弹幕xml解析结束, 共解析到 {} 个弹幕.", cid, docIndex);
         // 清空计数器

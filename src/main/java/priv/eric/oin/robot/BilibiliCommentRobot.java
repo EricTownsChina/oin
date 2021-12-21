@@ -6,16 +6,20 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import priv.eric.oin.robot.handler.BvCommentParserHandler;
+import priv.eric.oin.robot.handler.RobotThreadPoolExecutor;
 
 import javax.annotation.Resource;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author EricTownsChina@outlook.com
@@ -39,9 +43,15 @@ public class BilibiliCommentRobot {
 
     private static final String PLACEHOLDER_BVID = "{bvid}";
     private static final String PLACEHOLDER_CID = "{cid}";
+    /**
+     * 每日一清
+     */
+    private static final Map<String, Integer> EXIST_BV_CODE = new ConcurrentHashMap<>();
 
-//    String bvCode = "BV1ct411H77Z";
-//    String bvCode = "BV1XC4y1p7Yn";
+    @Scheduled(cron = "${robot.bilibili.handle.bv.clear}")
+    public void clearBvCode() {
+        EXIST_BV_CODE.clear();
+    }
 
     /**
      * 保存BV的弹幕信息
@@ -55,6 +65,12 @@ public class BilibiliCommentRobot {
             return;
         }
 
+        // 是否被处理过
+        if (EXIST_BV_CODE.containsKey(bvCode)) {
+            log.info("----- bv号为 {} 的弹幕信息已经被处理过.", bvCode);
+            return;
+        }
+
         // 获取bv对应的cid列表
         Set<String> cidSet = getCid(bvCode);
         if (CollectionUtils.isEmpty(cidSet)) {
@@ -62,6 +78,8 @@ public class BilibiliCommentRobot {
             return;
         }
 
+        // 自定义线程池实例
+        ThreadPoolExecutor bvCommentThreadPoolExecutor = RobotThreadPoolExecutor.instance("bilibili-robot");
         // 遍历处理
         for (String cid : cidSet) {
             // 获取弹幕文件
@@ -69,7 +87,7 @@ public class BilibiliCommentRobot {
             try {
                 // 获取弹幕xml文件
                 xmlFile = getCommentXml(cid);
-                // 随机睡眠
+                // 随机睡眠, 防止被限流
                 int i = new Random(2).nextInt(10);
                 Thread.sleep(i * 1000);
             } catch (Exception e) {
@@ -80,9 +98,19 @@ public class BilibiliCommentRobot {
                 continue;
             }
 
-            // 解析文件, 推入消息队列
-            saxParserComment(xmlFile, bvCode, cid);
+            // 新开线程执行解析
+            bvCommentThreadPoolExecutor.execute(() -> {
+                // 执行解析入库
+                saxParserComment(xmlFile, bvCode, cid);
+                // 解析完成, 删除的弹幕文件
+                log.info(xmlFile.delete() ?
+                        "清除弹幕文件 " + xmlFile.getName() + " 成功." :
+                        "清除弹幕文件 " + xmlFile.getName() + " 失败. 需要手动清理");
+            });
         }
+
+        // 已处理
+        EXIST_BV_CODE.put(bvCode, 1);
     }
 
     /**
