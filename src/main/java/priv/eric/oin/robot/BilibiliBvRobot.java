@@ -1,5 +1,7 @@
 package priv.eric.oin.robot;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -12,13 +14,11 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import priv.eric.oin.dao.BilibiliBvDao;
 
 import javax.annotation.Resource;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author EricTownsChina@outlook.com
@@ -35,26 +35,30 @@ public class BilibiliBvRobot {
     private static final Map<String, Integer> EXIST_URL_MAP = new ConcurrentHashMap<>();
 
     @Resource
+    private BilibiliBvDao bvDao;
+    @Resource
     private BilibiliCommentRobot commentRobot;
 
     @Value("${robot.chrome.driver.url}")
     private String chromeDriver;
 
     @Scheduled(cron = "${robot.bilibili.comment.time}")
-    public void handleBvJob() {
-        log.info("------------- BV job start...");
-        handleBvHtml();
-        log.info("------------- BV job end.");
+    public void handleBvCommentJob() {
+        log.info("------------- BV comment job start...");
+
+        String rootHref = "https://www.bilibili.com";
+        // 获取页面元素
+        Document doc = getDoc(rootHref);
+        // 记录该页面
+        EXIST_URL_MAP.put(rootHref, 1);
+        // 处理弹幕信息
+        executeDocumentComment(doc);
+
+        log.info("------------- BV comment job end.");
     }
 
-    /**
-     * 处理b站BV
-     */
-    public void handleBvHtml() {
-        String rootHref= "https://www.bilibili.com";
-        Document doc = getDoc(rootHref);
-        EXIST_URL_MAP.put(rootHref, 1);
-        executeDocumentBvCode(doc);
+    public void handleBvBaseInfoJob() {
+
     }
 
     /**
@@ -62,7 +66,7 @@ public class BilibiliBvRobot {
      *
      * @param doc Document
      */
-    private void executeDocumentBvCode(Document doc) {
+    private void executeDocumentComment(Document doc) {
         // 选择负责条件的元素
         Elements bvElements = doc.select("a[href*=/BV]");
 
@@ -89,7 +93,7 @@ public class BilibiliBvRobot {
             String href = aElement.attr("href");
             // 已经解析过, 不再重复解析
             if (EXIST_URL_MAP.containsKey(href)) {
-                EXIST_URL_MAP.compute(href, (k, v) -> v++);
+                EXIST_URL_MAP.compute(href, (k, v) -> v = (null == v ? 0 : ++v));
                 return;
             }
             // 记录解析url
@@ -102,7 +106,7 @@ public class BilibiliBvRobot {
             }
             log.info("-------------------------------------- 获取到url = {}", href);
             Document newDoc = getDoc(href);
-            executeDocumentBvCode(newDoc);
+            executeDocumentComment(newDoc);
         });
     }
 
@@ -113,8 +117,72 @@ public class BilibiliBvRobot {
      * @return Document
      */
     private Document getDoc(String url) {
-        Document doc = null;
+        Document doc;
+        WebDriver webDriver = getWebDriver();
+        // 访问指定url页面
+        webDriver.get(url);
+        // 模拟用户操作
+        try {
+            //向下滚动到页面底部
+            JavascriptExecutor js = (JavascriptExecutor) webDriver;
+            js.executeScript("window.scrollTo(0, document.documentElement.clientHeight);");
 
+            // 休息片刻
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        // 获取页面源代码
+        doc = Jsoup.parse(webDriver.getPageSource());
+
+        // 关闭浏览器
+        webDriver.close();
+        // 退出
+        webDriver.quit();
+
+        // 返回Document节点
+        return doc;
+    }
+
+
+    /**
+     * 获取BV号视频的基本信息
+     *
+     * @param bvCode BV号
+     * @return 信息的JSON格式
+     */
+    private JSONObject getBvBaseInfo(String bvCode) {
+        JSONObject baseInfo = null;
+        try {
+            // 获取BV视频播放页面
+            WebDriver webDriver = getWebDriver();
+            webDriver.get("view-source:https://www.bilibili.com/video/" + bvCode);
+
+            // 获取页面源代码
+            String pageSource = webDriver.getPageSource();
+            // 获取BV视频基本信息
+            int start = pageSource.indexOf("window.__INITIAL_STATE__=") + "window.__INITIAL_STATE__=".length();
+            int end = pageSource.indexOf(";(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());");
+            String baseInfoStr = pageSource.substring(start, end);
+            // 取消转义/
+            baseInfoStr = baseInfoStr.replace("\\u002F", "/");
+
+            // 解析成JSON格式, 返回
+            return JSON.parseObject(baseInfoStr);
+        } catch (Exception e) {
+            log.info("get bv baseInfo error : ", e);
+            return baseInfo;
+        }
+    }
+
+
+    /**
+     * 获取WebDriver
+     *
+     * @return WebDriver
+     */
+    private WebDriver getWebDriver() {
         // 设置系统参数
         System.setProperty(DRIVER_URL_KEY, chromeDriver);
         //创建chrome参数对象
@@ -126,32 +194,8 @@ public class BilibiliBvRobot {
         options.addArguments("blink-settings=imagesEnabled=false");
         options.addArguments("disable-gpu");
         // 新建chrome驱动
-        WebDriver webDriver = new ChromeDriver(options);
-
-        webDriver.get(url);
-
-        //等待几秒
-        try {
-            //向下滚动到页面底部
-            JavascriptExecutor js = (JavascriptExecutor) webDriver;
-            js.executeScript("window.scrollTo(0, document.documentElement.clientHeight);");
-
-            // 休息片刻
-            Thread.sleep(8000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        doc = Jsoup.parse(webDriver.getPageSource());
-
-        // 关闭浏览器
-        webDriver.close();
-        webDriver.quit();
-
-        // 返回Docment节点
-        return doc;
+        return new ChromeDriver(options);
     }
-
 
 
 }

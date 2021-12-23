@@ -15,6 +15,14 @@
         </foreach>
     </insert>
 
+    <select id="selectAllBvCodes" resultType="java.lang.String">
+        SELECT bv_code
+        FROM bilibili_comment
+        GROUP BY bv_code
+    </select>
+
+
+
 
 
 </mapper>

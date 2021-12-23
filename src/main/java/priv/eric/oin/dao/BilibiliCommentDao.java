@@ -3,6 +3,7 @@ package priv.eric.oin.dao;
 import priv.eric.oin.entity.BvComment;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author EricTownsChina@outlook.com
@@ -25,5 +26,12 @@ public interface BilibiliCommentDao {
      * @param bvCommentList BV弹幕列表
      */
     void batchAddNewComment(List<BvComment> bvCommentList);
+
+    /**
+     * 获取所有的BV号
+     *
+     * @return Set
+     */
+    Set<String> selectAllBvCodes();
 
 }
