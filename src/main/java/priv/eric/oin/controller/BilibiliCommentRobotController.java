@@ -30,10 +30,4 @@ public class BilibiliCommentRobotController {
         return Resp.ok();
     }
 
-    @RequestMapping("/executeBilibiliRobot")
-    public Resp saveDataSource() {
-        bilibiliBvRobot.handleBvHtml();
-        return Resp.ok();
-    }
-
 }

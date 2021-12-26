@@ -1,6 +1,7 @@
 package priv.eric.oin.robot;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -57,6 +58,7 @@ public class BilibiliBvRobot {
         log.info("------------- BV comment job end.");
     }
 
+    // TODO: 2021-12-23 未完成的爬虫
     public void handleBvBaseInfoJob() {
 
     }
@@ -145,6 +147,21 @@ public class BilibiliBvRobot {
         return doc;
     }
 
+    private void parseBvBaseInfo(JSONObject bvBaseInfo) {
+        if (null == bvBaseInfo) {
+            log.info("BV基本信息为空");
+            return;
+        }
+
+        // 视频信息
+        JSONObject videoData = bvBaseInfo.getJSONObject("videoData");
+        // 作者信息
+        JSONObject upData = bvBaseInfo.getJSONObject("upData");
+        // 标签信息
+        JSONArray tags = bvBaseInfo.getJSONArray("tags");
+
+
+    }
 
     /**
      * 获取BV号视频的基本信息
@@ -175,7 +192,6 @@ public class BilibiliBvRobot {
             return baseInfo;
         }
     }
-
 
     /**
      * 获取WebDriver
