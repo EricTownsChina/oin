@@ -1,17 +1,17 @@
-package priv.eric.oin.entity;
+package priv.eric.oin.common.entity;
 
 /**
  * @author 赵元路 18358572500
  * <p>
  * Description: 基础返回码和返回信息定义
- * @date 2020/3/12 12:50
+ * Create 2020/3/12 12:50
  */
 public enum ResponseCode {
     /**
      * 响应码
      */
-    SUCCESS(0, "OK"),
-    FAIL(-1, "ERROR");
+    SUCCESS(200, "SUCCESS"),
+    FAIL(-1, "FAIL");
 
 
     private final Integer code;

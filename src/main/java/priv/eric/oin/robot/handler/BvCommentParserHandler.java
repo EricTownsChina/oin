@@ -9,7 +9,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 import priv.eric.oin.dao.BilibiliCommentDao;
 import priv.eric.oin.entity.BvComment;
-import priv.eric.oin.util.UUIDUtil;
+import priv.eric.oin.common.utils.UUIDUtil;
 
 import javax.annotation.Resource;
 import java.sql.Timestamp;

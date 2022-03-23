@@ -12,6 +12,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import priv.eric.oin.robot.handler.BvCommentParserHandler;
 import priv.eric.oin.robot.handler.RobotThreadPoolExecutor;
+import priv.eric.oin.service.BvCommentService;
 
 import javax.annotation.Resource;
 import javax.xml.parsers.SAXParser;
@@ -43,6 +44,10 @@ public class BilibiliCommentRobot {
 
     private static final String PLACEHOLDER_BVID = "{bvid}";
     private static final String PLACEHOLDER_CID = "{cid}";
+
+    @Resource
+    private BvCommentService bvCommentService;
+
     /**
      * 每日一清
      */

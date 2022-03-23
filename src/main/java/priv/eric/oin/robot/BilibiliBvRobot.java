@@ -18,7 +18,9 @@ import org.springframework.stereotype.Service;
 import priv.eric.oin.dao.BilibiliBvDao;
 
 import javax.annotation.Resource;
-import java.util.Map;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -39,6 +41,11 @@ public class BilibiliBvRobot {
     private BilibiliBvDao bvDao;
     @Resource
     private BilibiliCommentRobot commentRobot;
+
+    /**
+     * 需要被解析的网站队列
+     */
+    private Deque<Document> parseDocuments = new ArrayDeque<>();
 
     @Value("${robot.chrome.driver.url}")
     private String chromeDriver;
@@ -119,29 +126,36 @@ public class BilibiliBvRobot {
      * @return Document
      */
     private Document getDoc(String url) {
-        Document doc;
-        WebDriver webDriver = getWebDriver();
-        // 访问指定url页面
-        webDriver.get(url);
-        // 模拟用户操作
+        Document doc = null;
+        WebDriver webDriver = null;
         try {
-            //向下滚动到页面底部
-            JavascriptExecutor js = (JavascriptExecutor) webDriver;
-            js.executeScript("window.scrollTo(0, document.documentElement.clientHeight);");
+            webDriver = getWebDriver();
+            // 访问指定url页面
+            webDriver.get(url);
+            // 模拟用户操作
+            try {
+                //向下滚动到页面底部
+                JavascriptExecutor js = (JavascriptExecutor) webDriver;
+                js.executeScript("window.scrollTo(0, document.documentElement.clientHeight);");
 
-            // 休息片刻
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+                // 休息片刻
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            // 获取页面源代码
+            doc = Jsoup.parse(webDriver.getPageSource());
+        } catch (Exception e) {
+            log.error("getDoc error: ", e);
+        } finally {
+            if (null != webDriver) {
+                // 关闭浏览器
+                webDriver.close();
+                // 退出
+                webDriver.quit();
+            }
         }
-
-        // 获取页面源代码
-        doc = Jsoup.parse(webDriver.getPageSource());
-
-        // 关闭浏览器
-        webDriver.close();
-        // 退出
-        webDriver.quit();
 
         // 返回Document节点
         return doc;
@@ -171,9 +185,9 @@ public class BilibiliBvRobot {
      */
     private JSONObject getBvBaseInfo(String bvCode) {
         JSONObject baseInfo = null;
+        WebDriver webDriver = null;
         try {
-            // 获取BV视频播放页面
-            WebDriver webDriver = getWebDriver();
+            webDriver = getWebDriver();
             webDriver.get("view-source:https://www.bilibili.com/video/" + bvCode);
 
             // 获取页面源代码
@@ -190,6 +204,10 @@ public class BilibiliBvRobot {
         } catch (Exception e) {
             log.info("get bv baseInfo error : ", e);
             return baseInfo;
+        } finally {
+            if (null != webDriver) {
+                webDriver.close();
+            }
         }
     }
 

@@ -1,13 +1,13 @@
-package priv.eric.oin.entity;
+package priv.eric.oin.common.entity;
 
 import lombok.Data;
 import org.springframework.util.StringUtils;
 
-import static priv.eric.oin.entity.ResponseCode.*;
+import static priv.eric.oin.common.entity.ResponseCode.*;
 
 /**
  * @author Eric 840017241@qq.com
- * @date 2021-08-26 23:17
+ * Create 2021-08-26 23:17
  * <p>
  * desc: 统一响应实体类
  */
@@ -84,14 +84,14 @@ public class Resp {
                 .build();
     }
 
-    public static Resp error(String msg) {
+    public static Resp fail(String msg) {
         return Resp.n()
                 .setCode(FAIL.getCode())
                 .setMsg(StringUtils.isEmpty(msg) ? FAIL.getDesc() : msg)
                 .build();
     }
 
-    public static Resp error(Integer code, String msg) {
+    public static Resp fail(Integer code, String msg) {
         return Resp.n()
                 .setCode(code)
                 .setMsg(StringUtils.isEmpty(msg) ? FAIL.getDesc() : msg)

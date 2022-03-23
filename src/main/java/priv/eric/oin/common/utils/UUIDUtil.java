@@ -1,4 +1,4 @@
-package priv.eric.oin.util;
+package priv.eric.oin.common.utils;
 
 /**
  * @author Eric 840017241@qq.com

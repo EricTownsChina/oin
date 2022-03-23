@@ -34,6 +34,11 @@
       "name": "robot.bilibili.handle.bv.clear",
       "type": "java.lang.String",
       "description": "已处理bv号弹幕清理(日清)."
+    },
+    {
+      "name": "task.bilibili.history-danmaku.url",
+      "type": "java.lang.String",
+      "description": "b站历史弹幕文件获取."
     }
   ]
 }

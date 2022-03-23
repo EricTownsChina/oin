@@ -1,4 +1,4 @@
-package priv.eric.oin.robot.handler;
+package priv.eric.oin.danmaku.service;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -6,47 +6,35 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * Desc: 弹幕线程池
+ *
  * @author EricTownsChina@outlook.com
- * @date 2021-12-20 15:42
- * <p>
- * desc: Robot线程池
+ * create 2022/3/14 0:04
  */
 @Slf4j
-public class RobotThreadPoolExecutor {
-
-    private RobotThreadPoolExecutor() {
-
-    }
-
-    /**
-     * CPU核心数
-     */
-    private static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
+public class DanmakuThreadPool {
 
     public static ThreadPoolExecutor singleInstance() {
         return new ThreadPoolExecutor(1, 1,
                 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>());
+                new LinkedBlockingQueue<>());
     }
 
     public static ThreadPoolExecutor instance(String threadName) {
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
         return new ThreadPoolExecutor(
-                // 主线程个数 = CPU核心数
-                PROCESSORS,
-                // 线程池最大线程数 = CPU核心数 * 2
-                PROCESSORS * 2,
-                // 救急线程空闲存活时间 1分钟
-                60L,
-                // 救急线程空闲存活时间单位
+                availableProcessors,
+                availableProcessors * 2,
+                30,
                 TimeUnit.SECONDS,
                 // 消息队列
                 new ArrayBlockingQueue<>(1000),
                 // 线程工厂(设置名称)
-                new RobotThreadFactory(threadName),
+                new DanmakuThreadPool.DanmakuThreadFactory(threadName),
                 // 拒绝策略
                 (r, executor) -> {
                     // 抄的dubbo的拒绝策略, 增强了日志
-                    String msg = String.format("Robot Thread pool is EXHAUSTED!" +
+                    String msg = String.format("Danmaku Thread pool is EXHAUSTED!" +
                                     " Thread Name: %s, Pool Size: %d (active: %d, core: %d, max: %d, largest: %d), Task: %d (completed: %d)," +
                                     " Executor status:(isShutdown:%s, isTerminated:%s, isTerminating:%s)!",
                             threadName, executor.getPoolSize(), executor.getActiveCount(), executor.getCorePoolSize(), executor.getMaximumPoolSize(), executor.getLargestPoolSize(),
@@ -63,13 +51,14 @@ public class RobotThreadPoolExecutor {
                     throw new RejectedExecutionException("Timed Out while attempting to enqueue Task.");
                 }
         );
+
     }
 
-    static class RobotThreadFactory implements ThreadFactory {
+    static class DanmakuThreadFactory implements ThreadFactory {
         String threadName;
         AtomicInteger nums = new AtomicInteger(0);
 
-        public RobotThreadFactory(String threadName) {
+        public DanmakuThreadFactory(String threadName) {
             this.threadName = threadName + "-" + nums.getAndIncrement();
         }
 
