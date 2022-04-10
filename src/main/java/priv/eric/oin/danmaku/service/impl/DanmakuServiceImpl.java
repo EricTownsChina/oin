@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Desc:
+ * Desc: 弹幕文件获取
  *
  * @author EricTownsChina@outlook.com
  * create 2022/3/13 23:05
@@ -21,7 +21,7 @@ public class DanmakuServiceImpl implements DanmakuService {
 
     private static final String CACHE_KEY_CID = "oid";
 
-    @Value("${task.bilibili.history-danmaku.url}")
+    @Value("${bilibili.danmuku.history.url}")
     private String historyDanmakuUrl;
 
     @Override

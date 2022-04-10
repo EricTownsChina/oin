@@ -3,11 +3,12 @@ package priv.eric.oin.common.entity;
 import lombok.Data;
 import org.springframework.util.StringUtils;
 
-import static priv.eric.oin.common.entity.ResponseCode.*;
+import static priv.eric.oin.common.entity.ResponseCode.FAIL;
+import static priv.eric.oin.common.entity.ResponseCode.SUCCESS;
 
 /**
  * @author Eric 840017241@qq.com
- * Create 2021-08-26 23:17
+ * create 2021-08-26 23:17
  * <p>
  * desc: 统一响应实体类
  */
@@ -31,35 +32,6 @@ public class Resp {
 
     public static Builder n() {
         return new Builder();
-    }
-
-    public static class Builder {
-        private Integer code;
-        private String msg;
-        private Object data;
-
-        public Builder setCode(Integer code) {
-            this.code = code;
-            return this;
-        }
-
-        public Builder setMsg(String msg) {
-            this.msg = msg;
-            return this;
-        }
-
-        public Builder setData(Object data) {
-            this.data = data;
-            return this;
-        }
-
-        public Resp build() {
-            Resp resp = new Resp();
-            resp.code = this.code;
-            resp.msg = this.msg;
-            resp.data = this.data;
-            return resp;
-        }
     }
 
     public static Resp ok() {
@@ -96,6 +68,35 @@ public class Resp {
                 .setCode(code)
                 .setMsg(StringUtils.isEmpty(msg) ? FAIL.getDesc() : msg)
                 .build();
+    }
+
+    public static class Builder {
+        private Integer code;
+        private String msg;
+        private Object data;
+
+        public Builder setCode(Integer code) {
+            this.code = code;
+            return this;
+        }
+
+        public Builder setMsg(String msg) {
+            this.msg = msg;
+            return this;
+        }
+
+        public Builder setData(Object data) {
+            this.data = data;
+            return this;
+        }
+
+        public Resp build() {
+            Resp resp = new Resp();
+            resp.code = this.code;
+            resp.msg = this.msg;
+            resp.data = this.data;
+            return resp;
+        }
     }
 
 }

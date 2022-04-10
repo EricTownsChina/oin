@@ -31,5 +31,5 @@ build/
 .vscode/
 
 ### CUSTOM ###
-/src/main/resources/application.properties
-/src/main/resources/application-server.properties
+/src/main/resources/application-dev.yml
+/src/main/resources/application-prod.yml

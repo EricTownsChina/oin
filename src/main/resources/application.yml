@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: oin
+  profiles:
+    active: dev
+
+server:
+  port: 10086
+  servlet:
+    context-path: /${spring.application.name}
+
+logging:
+  level:
+    root: INFO
+  file:
+    max-size: 10MB
+    name: log/${spring.application.name}.log

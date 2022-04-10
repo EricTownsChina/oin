@@ -1,40 +1,66 @@
-package priv.eric.oin.danmaku.service;
+package priv.eric.oin.common.thread;
 
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.Nonnull;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Desc: 弹幕线程池
- *
  * @author EricTownsChina@outlook.com
- * create 2022/3/14 0:04
+ * create 2021-12-20 15:42
+ * <p>
+ * desc: 自定义线程池
  */
 @Slf4j
-public class DanmakuThreadPool {
+public class MyThreadPoolExecutor {
+
+    /**
+     * CPU核心数
+     */
+    private static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
+    private static final String THREAD_NAME = "oin";
+
+    private MyThreadPoolExecutor() {
+
+    }
 
     public static ThreadPoolExecutor singleInstance() {
-        return new ThreadPoolExecutor(1, 1,
-                0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>());
+        return singleInstance(THREAD_NAME);
+    }
+
+    public static ThreadPoolExecutor singleInstance(String threadName) {
+        return new ThreadPoolExecutor(
+                1,
+                1,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(),
+                new MyThreadFactory(threadName));
+    }
+
+    public static ThreadPoolExecutor instance() {
+        return instance(THREAD_NAME);
     }
 
     public static ThreadPoolExecutor instance(String threadName) {
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
         return new ThreadPoolExecutor(
-                availableProcessors,
-                availableProcessors * 2,
-                30,
+                // 主线程个数 = CPU核心数
+                PROCESSORS,
+                // 线程池最大线程数 = CPU核心数 * 2
+                PROCESSORS * 2,
+                // 救急线程空闲存活时间 1分钟
+                60L,
+                // 救急线程空闲存活时间单位
                 TimeUnit.SECONDS,
                 // 消息队列
                 new ArrayBlockingQueue<>(1000),
                 // 线程工厂(设置名称)
-                new DanmakuThreadPool.DanmakuThreadFactory(threadName),
+                new MyThreadFactory(threadName),
                 // 拒绝策略
                 (r, executor) -> {
                     // 抄的dubbo的拒绝策略, 增强了日志
-                    String msg = String.format("Danmaku Thread pool is EXHAUSTED!" +
+                    String msg = String.format("Robot Thread pool is EXHAUSTED!" +
                                     " Thread Name: %s, Pool Size: %d (active: %d, core: %d, max: %d, largest: %d), Task: %d (completed: %d)," +
                                     " Executor status:(isShutdown:%s, isTerminated:%s, isTerminating:%s)!",
                             threadName, executor.getPoolSize(), executor.getActiveCount(), executor.getCorePoolSize(), executor.getMaximumPoolSize(), executor.getLargestPoolSize(),
@@ -51,19 +77,18 @@ public class DanmakuThreadPool {
                     throw new RejectedExecutionException("Timed Out while attempting to enqueue Task.");
                 }
         );
-
     }
 
-    static class DanmakuThreadFactory implements ThreadFactory {
+    static class MyThreadFactory implements ThreadFactory {
         String threadName;
         AtomicInteger nums = new AtomicInteger(0);
 
-        public DanmakuThreadFactory(String threadName) {
+        public MyThreadFactory(String threadName) {
             this.threadName = threadName + "-" + nums.getAndIncrement();
         }
 
         @Override
-        public Thread newThread(Runnable r) {
+        public Thread newThread(@Nonnull Runnable r) {
             return new Thread(r, threadName);
         }
     }

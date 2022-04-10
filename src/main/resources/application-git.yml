@@ -1,0 +1,23 @@
+spring:
+  kafka:
+    bootstrap-servers: ${kafka-url}
+    producer:
+      retries: 5
+      batch-size: 16384
+      buffer-memory: 33554432
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+chrome-driver:
+  url: ${chrom-driver-url}
+
+bilibili:
+  index:
+    url: https://www.bilibili.com
+  bv:
+    info:
+      url: http://api.bilibili.com/x/web-interface/view
+      kafka-topic: ${topic-name}
+  danmuku:
+    history:
+      url: http://api.bilibili.com/x/v2/dm/web/history/seg.so

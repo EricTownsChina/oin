@@ -36,7 +36,7 @@
       "description": "已处理bv号弹幕清理(日清)."
     },
     {
-      "name": "task.bilibili.history-danmaku.url",
+      "name": "bilibili.danmuku.history.url",
       "type": "java.lang.String",
       "description": "b站历史弹幕文件获取."
     }
