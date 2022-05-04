@@ -3,6 +3,7 @@ package priv.eric.oin.bv.service;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Desc: 视频信息获取service
@@ -26,14 +27,14 @@ public interface BvInfoService {
      * @param url b站网页
      * @return BV号列表
      */
-    Deque<String> getBvCodesByUrl(String url);
+    Set<String> getBvCodesByUrl(String url);
 
     /**
      * 存储bv视频信息
      *
      * @param bvid bvid
      */
-    void store(String bvid);
+    void send(String bvid);
 
     /**
      * 批量获取视频的基本信息

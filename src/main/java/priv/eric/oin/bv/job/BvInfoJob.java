@@ -5,12 +5,17 @@ import org.quartz.DisallowConcurrentExecution;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import priv.eric.oin.bv.service.BvInfoService;
+import priv.eric.oin.common.thread.MyScheduleThreadPoolExecutor;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.Deque;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Desc: bv信息任务
@@ -31,20 +36,45 @@ public class BvInfoJob {
     @Resource
     private BvInfoService bvInfoService;
 
-    @Scheduled(cron = "0 0 0/1 * * ?")
-    public void store() {
+    @PostConstruct
+    public void init() {
+        storeJob();
+    }
+
+
+    public void storeJob() {
+        ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = MyScheduleThreadPoolExecutor.instance(1);
+        scheduledThreadPoolExecutor.scheduleWithFixedDelay(new StoreTask(),10, 60, TimeUnit.SECONDS);
+    }
+
+    private void store() {
         try {
             log.info("===== 存储bv信息开始...");
-            Deque<String> bvCodes = bvInfoService.getBvCodesByUrl(bilibiliIndexUrl);
+            Set<String> bvCodes = bvInfoService.getBvCodesByUrl(bilibiliIndexUrl);
             if (null == bvCodes || bvCodes.isEmpty()) {
                 return;
             }
             log.info("===== 获取到 bvCodes size = {}", bvCodes.size());
-            bvCodes.forEach(bvCode -> bvInfoService.store(bvCode));
+            bvCodes.forEach(bvCode -> {
+                try {
+                    long sleep = 1000L * new Random().nextInt(10);
+                    Thread.sleep(sleep);
+                } catch (InterruptedException e) {
+                    // ignore
+                }
+                bvInfoService.send(bvCode);
+            });
         } catch (Exception e) {
             log.error("===== 存储bv信息失败 : ", e);
         } finally {
             log.info("===== 存储bv信息结束...");
+        }
+    }
+
+    private class StoreTask implements Runnable {
+        @Override
+        public void run() {
+            store();
         }
     }
 

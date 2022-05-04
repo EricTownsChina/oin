@@ -29,7 +29,7 @@ public class DebugController {
 
     @GetMapping("/debug/info/store/{bvid}")
     public Resp getBvBaseInfoTest(@PathVariable String bvid) {
-        bvInfoService.store(bvid);
+        bvInfoService.send(bvid);
         return Resp.ok();
     }
 

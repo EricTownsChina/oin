@@ -6,7 +6,7 @@
     <artifactId>oin</artifactId>
     <version>1.0.0</version>
     <name>oin</name>
-    <description>oin</description>
+    <description>priv.eric.oin</description>
 
     <properties>
         <java.version>1.8</java.version>
@@ -112,7 +112,7 @@
     </dependencyManagement>
 
     <build>
-        <finalName>${artifactId}</finalName>
+        <finalName>${artifactId}-${version}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

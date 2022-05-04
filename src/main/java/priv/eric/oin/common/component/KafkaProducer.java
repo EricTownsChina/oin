@@ -22,11 +22,12 @@ public class KafkaProducer {
     /**
      * 生产消息到kafka
      *
-     * @param obj 消息
+     * @param key 消息key
+     * @param data 消息内容
      */
-    public void send(String topicName, Object obj) {
-        log.info("===== 推送kafka, topic = {}, obj = {}", topicName, obj);
-        kafkaTemplate.send(topicName, obj.toString());
+    public void send(String topicName, String key, Object data) {
+//        log.info("===== 推送kafka, topic = {}, key = {}", topicName, key);
+        kafkaTemplate.send(topicName, key, data.toString());
     }
 
 }

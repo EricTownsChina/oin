@@ -18,6 +18,10 @@ import priv.eric.oin.common.entity.BaseDoc;
 public class BvInfoDoc extends BaseDoc {
 
     /**
+     * 源数据
+     */
+    private String dataSource;
+    /**
      * bv号
      */
     private String bvid;
@@ -27,13 +31,17 @@ public class BvInfoDoc extends BaseDoc {
     @JSONField(name = "mission_id")
     private Integer missionId;
     /**
+     * 稿件ID
+     */
+    private Integer aid;
+    /**
      * bv封面
      */
     private String pic;
     /**
      * bv分P数
      */
-    private String videos;
+    private Integer videos;
     /**
      * bv标题
      */
@@ -59,7 +67,7 @@ public class BvInfoDoc extends BaseDoc {
      * 投稿时间
      */
     @JSONField(name = "ctime")
-    private String cTime;
+    private Long cTime;
     /**
      * 稿件发布时间
      */
@@ -77,6 +85,51 @@ public class BvInfoDoc extends BaseDoc {
      * 作者昵称
      */
     private String ownerName;
+    /**
+     * 喜欢数
+     */
+    private Long like;
+    /**
+     * 不喜欢数, 恒为0
+     */
+    private Long dislike;
+    /**
+     * 播放数
+     */
+    private Long view;
+    /**
+     * 弹幕数
+     */
+    private Long danmaku;
+    /**
+     * 分享数
+     */
+    private Long share;
+    /**
+     * 评论数
+     */
+    private Long reply;
+    /**
+     * 收藏数
+     */
+    private Long favorite;
+    /**
+     * 硬币数
+     */
+    private Long coin;
+    /**
+     * 当前排名
+     */
+    private Long nowRank;
+    /**
+     * 历史最高排名
+     */
+    private Long hisRank;
+    /**
+     * 警告信息
+     */
+    @JSONField(name = "argue_msg")
+    private String argueMsg;
 
     @Override
     public String toString() {

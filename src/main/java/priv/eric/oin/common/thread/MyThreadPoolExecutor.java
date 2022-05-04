@@ -2,9 +2,7 @@ package priv.eric.oin.common.thread;
 
 import lombok.extern.slf4j.Slf4j;
 
-import javax.annotation.Nonnull;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author EricTownsChina@outlook.com
@@ -77,20 +75,6 @@ public class MyThreadPoolExecutor {
                     throw new RejectedExecutionException("Timed Out while attempting to enqueue Task.");
                 }
         );
-    }
-
-    static class MyThreadFactory implements ThreadFactory {
-        String threadName;
-        AtomicInteger nums = new AtomicInteger(0);
-
-        public MyThreadFactory(String threadName) {
-            this.threadName = threadName + "-" + nums.getAndIncrement();
-        }
-
-        @Override
-        public Thread newThread(@Nonnull Runnable r) {
-            return new Thread(r, threadName);
-        }
     }
 
 }

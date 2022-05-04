@@ -1,5 +1,6 @@
 package priv.eric.oin.bv.service.impl;
 
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -13,12 +14,12 @@ import priv.eric.oin.bv.entity.BvInfoDoc;
 import priv.eric.oin.bv.service.BvInfoService;
 import priv.eric.oin.common.component.ChromeServer;
 import priv.eric.oin.common.component.KafkaProducer;
+import priv.eric.oin.common.utils.TimeUtil;
 
 import javax.annotation.Resource;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.List;
-import java.util.Map;
+import java.sql.Time;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Desc: 视频信息获取service impl
@@ -47,6 +48,8 @@ public class BvInfoServiceImpl implements BvInfoService {
     @Value("${bilibili.bv.info.kafka-topic}")
     private String topicBvBaseInfo;
 
+    private Set<String> existsUrls = new HashSet<>();
+
     @Override
     public String getBvBaseInfoStr(String bvid) {
         try {
@@ -59,7 +62,6 @@ public class BvInfoServiceImpl implements BvInfoService {
                     .form("bvid", bvid)
                     .execute()
                     .body();
-            log.info("===== bvBaseInfoUrl response = {}", resp);
 
             // 处理返回结果
             JSONObject respJsonObject = JSON.parseObject(resp);
@@ -77,39 +79,56 @@ public class BvInfoServiceImpl implements BvInfoService {
     }
 
     @Override
-    public Deque<String> getBvCodesByUrl(String url) {
-        Deque<String> bvCodes = new ArrayDeque<>();
+    public Set<String> getBvCodesByUrl(String url) {
+        existsUrls = new HashSet<>();
+        return recursionGetBvCodes(url);
+    }
+
+    private Set<String> recursionGetBvCodes(String url) {
         Document doc = chromeServer.getDoc(url);
-        // 选择负责条件的元素
         Elements bvElements = doc.select("a[href*=/BV]");
 
-        // 遍历符合条件的元素
-        for (Element bvElement : bvElements) {
-            // 提取出BV号信息
-            String bvHref = bvElement.attr("href");
-            int startIndex = bvHref.indexOf("/BV");
-            int endIndex = startIndex + BV_LENGTH + 1;
-            if (-1 == startIndex || endIndex > bvHref.length()) {
-                log.info("解析bvCode失败, bvHref = {}", bvHref);
-                continue;
+        Set<String> bvCodes = bvElements.stream().map(this::getBvCode).collect(Collectors.toSet());
+
+        Elements buckets = doc.select("a[href^=//www.bilibili.com/]");
+        log.info("buckets size = {}", buckets.size());
+        for (Element bucket : buckets) {
+            String bvHref = bucket.attr("href");
+            if (bvHref.startsWith("//") && bvHref.endsWith("/")) {
+                if (existsUrls.contains(bvHref)) {
+                    continue;
+                }
+                existsUrls.add(bvHref);
+                bvHref = "https:" + bvHref;
+                Set<String> recBvCodes = recursionGetBvCodes(bvHref);
+                bvCodes.addAll(recBvCodes);
             }
-            String bvCode = bvHref.substring(startIndex + 1, endIndex);
-            // 统计
-            bvCodes.add(bvCode);
         }
 
         return bvCodes;
     }
 
+    private String getBvCode(Element element) {
+        // 提取出BV号信息
+        String bvHref = element.attr("href");
+        int startIndex = bvHref.indexOf("/BV");
+        int endIndex = startIndex + BV_LENGTH + 1;
+        if (-1 == startIndex || endIndex > bvHref.length()) {
+            log.info("解析bvCode失败, bvHref = {}", bvHref);
+            return null;
+        }
+        return bvHref.substring(startIndex + 1, endIndex);
+    }
+
     @Override
-    public void store(String bvid) {
+    public void send(String bvid) {
         try {
             String bvBaseInfoStr = getBvBaseInfoStr(bvid);
             BvInfoDoc bvInfoDoc = processBvInfo(bvBaseInfoStr);
 
-            kafkaProducer.send(topicBvBaseInfo, bvInfoDoc);
+            kafkaProducer.send(topicBvBaseInfo, bvid, bvInfoDoc);
         } catch (Exception e) {
-            log.error("===== 存储 {} bv信息失败 : ", bvid, e);
+            log.error("===== 推送 [{}] bv信息失败 : ", bvid, e);
         }
     }
 
@@ -124,13 +143,44 @@ public class BvInfoServiceImpl implements BvInfoService {
         JSONObject bvInfoJsonObj = JSON.parseObject(originBvInfoStr);
         BvInfoDoc bvInfoDoc = bvInfoJsonObj.toJavaObject(BvInfoDoc.class);
 
+        // 补充源数据
+        supplementDataSource(originBvInfoStr, bvInfoDoc);
         // 补充作者
         supplementOwner(bvInfoJsonObj, bvInfoDoc);
+        // 补充统计信息
+        supplementStats(bvInfoJsonObj, bvInfoDoc);
+
+        // 标准化时间字段
+        standardTimeFields(bvInfoDoc);
+
 
         // 补充code
         bvInfoDoc.setCode(bvInfoDoc.getBvid());
         log.info("===== bvDocInfo : {}", bvInfoDoc);
         return bvInfoDoc;
+    }
+
+    private void standardTimeFields(BvInfoDoc bvInfoDoc) {
+        bvInfoDoc.setPubDate(TimeUtil.secondToMillis(bvInfoDoc.getPubDate()));
+        bvInfoDoc.setCTime(TimeUtil.secondToMillis(bvInfoDoc.getCTime()));
+
+    }
+
+    private void supplementDataSource(String originBvInfoStr, BvInfoDoc bvInfoDoc) {
+        bvInfoDoc.setDataSource(originBvInfoStr);
+    }
+
+    private void supplementStats(JSONObject bvInfoJsonObj, BvInfoDoc bvInfoDoc) {
+        JSONObject stat = bvInfoJsonObj.getJSONObject("stat");
+        bvInfoDoc.setNowRank(stat.getLong("now_rank"));
+        bvInfoDoc.setLike(stat.getLong("like"));
+        bvInfoDoc.setDislike(stat.getLong("dislike"));
+        bvInfoDoc.setView(stat.getLong("view"));
+        bvInfoDoc.setDanmaku(stat.getLong("danmaku"));
+        bvInfoDoc.setShare(stat.getLong("share"));
+        bvInfoDoc.setReply(stat.getLong("reply"));
+        bvInfoDoc.setFavorite(stat.getLong("favorite"));
+        bvInfoDoc.setCoin(stat.getLong("coin"));
     }
 
     private void supplementOwner(JSONObject bvInfoJsonObj, BvInfoDoc bvInfoDoc) {
