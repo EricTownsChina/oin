@@ -28,6 +28,7 @@ public class ChromeServer {
     private volatile WebDriver webDriver;
 
     public WebDriver getWebDriver() {
+
         if (null == webDriver) {
             synchronized (this) {
                 if (null == webDriver) {
